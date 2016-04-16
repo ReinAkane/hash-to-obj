@@ -8,6 +8,7 @@ Gem::Specification.new do |spec|
   spec.version       = HashToObj::VERSION
   spec.authors       = ['Sam Maxwell']
   spec.email         = ['raindropenter@gmail.com']
+  spec.license       = 'MITNFA'
 
   spec.summary       = 'Simple Ruby gem to objectify hashes'
   spec.description   = "Call 'objectify my_hash' to add accessor methods to "\
