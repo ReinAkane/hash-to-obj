@@ -1,5 +1,11 @@
 require 'spec_helper'
 
+module TestDefaultModule
+  def b
+    nil
+  end
+end
+
 describe HashToObj do
   it 'has a version number' do
     expect(HashToObj::VERSION).not_to be nil
@@ -90,5 +96,31 @@ describe HashToObj do
   it 'returns the same hash' do
     hash = { a: 'b' }
     expect(objectify(hash)).to eq(hash)
+  end
+
+  it 'can use a default module' do
+    hash = { a: 'b' }
+
+    objectify hash, default_module: TestDefaultModule
+
+    expect(hash).to respond_to(:b)
+
+    expect(hash.b).to be nil
+    expect(hash.a).to eq('b')
+  end
+
+  it 'will override default module methods' do
+    hash = { b: 'b' }
+
+    objectify hash, default_module: TestDefaultModule
+
+    expect(hash).to respond_to(:b)
+    expect(hash).to respond_to(:b=)
+
+    expect(hash.b).to eq('b')
+  end
+
+  it 'errors with a bad duck type' do
+    expect { objectify 'yarr' }.to raise_error(ArgumentError)
   end
 end

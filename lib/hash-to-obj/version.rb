@@ -1,3 +1,5 @@
 module HashToObj
-  VERSION = '0.1.0'.freeze
+  # :category: 
+  # Current version of hash-to-obj
+  VERSION = '0.2.0'.freeze
 end

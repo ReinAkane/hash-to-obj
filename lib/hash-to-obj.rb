@@ -11,30 +11,74 @@ module HashToObj
   # Anything that you want to objectify needs to respond to these methods like a
   # Hash would. If it doesn't at least respond_to? these methods, an error will
   # be thrown when objectifying.
-  DUCK_TYPE_API = [:[], :[]=].freeze
+  DUCK_TYPE_API = [:[], :[]=, :each_key].freeze
 
   ##
   # Throws an error if hash doesn't have all messages defined in DUCK_TYPE_API.
-  # Generates the accessors for all keys on the passed hash. Unless
-  # override_warnings is true-y, this will throw errors if we're gonna screw
-  # anything up. If you pass something that responds to :puts in
-  # override_warnings then warnings will just be puts'd to that, and things will
-  # continue.
-  def self.objectify(hash, override_warnings = false)
-    # Make sure it looks SOMEWHAT familiar.
-    DUCK_TYPE_API.each do |method_sym|
-      unless hash.respond_to?(method_sym) then
-        raise(ArgumentError,
-              "Cannot objectify something that doesn't look like a hash.")
+  # Generates the accessors for all keys on the passed hash.
+  #
+  # Accepted options:
+  # [override_warnings] Unless override_warnings is truthy, this will throw
+  #                     errors if we're gonna screw anything up. If you pass
+  #                     something that responds to :puts in override_warnings
+  #                     then warnings will just be puts'd to that, and things
+  #                     will continue.
+  # [default_module] If a default_module is specified, that will be included
+  #                  in the hash before adding our accessors, essentially
+  #                  allowing you to define a set of methods that should be
+  #                  present after objectifying regardless of the keys in the
+  #                  hash.
+  def self.objectify(hash, options = {})
+    if options.is_a?(Hash) then
+      internal_objectify(hash,
+                         options[:override_warnings],
+                         options[:default_module])
+    else
+      unless HashToObj.const_defined?(:SQUELCH_GLOBAL_WARNINGS) then
+        puts "objectify(hash, override_warnings) is deprecated.\n"\
+             '  please use objectify(hash, override_warnings: true) instead.'
       end
+      # Looks like they're using 0.1.0 API.
+      internal_objectify(hash, options)
+    end
+  end
+  
+  #-------------------------------------------------------------------------
+  # :section: Internal Methods
+  # Usually don't want to mess with these if you're not part of hash-to-obj.
+  #-------------------------------------------------------------------------
+  
+  ##
+  # Internal version of objectify. Uses seperated arguments instead of options
+  # hash.
+  def self.internal_objectify(hash,
+                              override_warnings = false,
+                              default_module = nil)
+    # Make sure it looks SOMEWHAT familiar.
+    unless quacks?(hash) then
+      raise(ArgumentError,
+            "Cannot objectify something that doesn't look like a hash.")
     end
 
     # Now lets actually add those methods.
-    hash.each_key do |key|
-      generate_accessors(hash, key, override_warnings)
-    end
+    hash.each_key { |key| generate_accessors(hash, key, override_warnings) }
+
+    hash.extend(default_module) if default_module
 
     hash
+  end
+
+  ##
+  # Returns true if the passed object responds to all methods defined in
+  # DUCK_TYPE_API.
+  def self.quacks?(obj)
+    DUCK_TYPE_API.each do |method_sym|
+      unless obj.respond_to?(method_sym) then
+        return false
+      end
+    end
+
+    true
   end
 
   ##
@@ -109,7 +153,9 @@ if begin
          'Call HashToObj.objectify instead.'
   end
 else
-  def objectify(hash, override_warnings = false)
-    HashToObj.objectify(hash, override_warnings)
+  ##
+  # See {HashToObj::objectify}[rdoc-ref:HashToObj::objectify]
+  def objectify(*args)
+    HashToObj.objectify(*args)
   end
 end
