@@ -3,7 +3,10 @@ require "hash-to-obj/version"
 ##
 # We extend this to objectify our hashes. It will generate some methods on the
 # hash to access the various keys.
-class HashToObj
+#
+# Define a constant HashToObj::SQUELCH_GLOBAL_WARNINGS to squelch warnings about
+# objectify already being defined.
+module HashToObj
   ##
   # Anything that you want to objectify needs to respond to these methods like a
   # Hash would. If it doesn't at least respond_to? these methods, an error will
@@ -21,7 +24,7 @@ class HashToObj
     # Make sure it looks SOMEWHAT familiar.
     DUCK_TYPE_API.each do |method_sym|
       unless hash.respond_to?(method_sym) then
-        raise(ArgumentException,
+        raise(ArgumentError,
               "Cannot objectify something that doesn't look like a hash.")
       end
     end
@@ -30,6 +33,8 @@ class HashToObj
     hash.each_key do |key|
       generate_accessors(hash, key, override_warnings)
     end
+    
+    hash
   end
   
   private
@@ -41,11 +46,11 @@ class HashToObj
   # override_warnings then warnings will just be puts'd to that, and things will
   # continue.
   def self.generate_accessors(hash, key, override_warnings=false)
-    unless override_warnings || warn(hash, key) then
+    if !override_warnings && should_warn?(hash, key) then
       if override_warnings.respond_to?(:puts) then
-        override_warnings.puts(warn(hash, key))
+        override_warnings.puts(should_warn?(hash, key))
       else
-        raise ArgumentException, warn(hash, key)
+        raise ArgumentError, should_warn?(hash, key)
       end
     end
     
@@ -62,7 +67,7 @@ class HashToObj
   # Returns a valid method name for the passed key if there is one, otherwise
   # returns false.
   def self.valid_key?(key)
-    regex_match = key.match(/\A[a-z_]+\Z/)
+    regex_match = key.to_s.match(/\A[a-z_][a-z0-9_]*\Z/)
     if regex_match.nil? then
       return false
     else
@@ -92,13 +97,22 @@ class HashToObj
   end
 end
 
-if respond_to?(:objectify) then
-  unless HashToObj.const_defined(:SQUELCH_GLOBAL_WARNINGS) then
+# This is an ugly ugly way of checking if the objectify method is defined
+# somewhere already. For whatever reason :respond_to? is simply not returning
+# the correct result.
+if begin
+    method(:objectify)
+    true
+  rescue NameError
+    false
+  end then
+  
+  unless HashToObj.const_defined?(:SQUELCH_GLOBAL_WARNINGS) then
     puts "Global already has an objectify method. "\
          "Call HashToObj.objectify instead."
   end
 else
-  def self.objectify(hash, override_warnings=false)
+  def objectify(hash, override_warnings=false)
     HashToObj.objectify(hash, override_warnings)
   end
 end
