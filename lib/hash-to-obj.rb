@@ -1,4 +1,5 @@
 require 'hash-to-obj/version'
+require 'hash-to-obj/default_module'
 
 ##
 # We extend this to objectify our hashes. It will generate some methods on the
