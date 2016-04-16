@@ -1,4 +1,4 @@
-def objectify(*args)
+def objectify(*_args)
   return false
 end
 
@@ -11,7 +11,7 @@ require 'rspec/expectations'
 
 include RSpec::Matchers
 
-hash = { a: "a" }
+hash = { a: 'a' }
 objectify hash
 
 expect(hash.respond_to?(:a)).to be false
