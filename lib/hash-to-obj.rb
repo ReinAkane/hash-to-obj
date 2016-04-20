@@ -114,7 +114,7 @@ module HashToObj
   # Returns a valid method name for the passed key if there is one, otherwise
   # returns false.
   def self.valid_key?(key)
-    regex_match = key.to_s.match(/\A[a-z_][a-z0-9_]*\Z/)
+    regex_match = key.to_s.match(/\A[a-z_][a-zA-Z0-9_]*\Z/)
     return false if regex_match.nil?
     return key.to_s
   end
